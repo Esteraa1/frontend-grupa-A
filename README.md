@@ -14,7 +14,7 @@ Node.js należy zainstalować lokalnie. Nie jest on dołączony do repozytorium.
 
 **Pobranie projektu:**
 
-Sklonuj repozytorium z GitHuba lub pobierz je jako archiwum ZIP, a następnie otwórz terminal w głównym katalogu projektu (frontend).
+Sklonuj repozytorium z GitHuba lub pobierz je jako archiwum ZIP, a następnie otwórz terminal w głównym katalogu projektu.
 
 **Instalacja zależności:**
 ```sh
