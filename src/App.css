@@ -156,3 +156,22 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .contact-layout { grid-template-columns: 1fr; }
   .footer-layout { flex-wrap: wrap; }
 }
+
+.user-panel h2 { font-size: 21px; font-weight: 500; }
+.account-section { padding: 24px 0; border-top: 1px solid var(--line); }
+.account-section p { line-height: 1.65; }
+.account-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.customer-id { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #e8ecdf; padding: 18px; }
+.customer-id div { display: grid; gap: 6px; min-width: 0; }
+.customer-id span { font-size: 12px; color: #626d5a; }
+.customer-id strong { overflow-wrap: anywhere; letter-spacing: .04em; }
+.account-success { padding: 12px 16px; background: #e8ecdf; border-left: 3px solid #718464; }
+.reservation-card { border: 1px solid var(--line); padding: 20px; margin-top: 20px; }
+.reservation-card h3, .reservation-editor h3 { margin: 0; font-size: 18px; font-weight: 500; }
+.reservation-editor { border-top: 1px solid var(--line); padding-top: 22px; }
+.reservation-editor .flow-actions { margin: 0; }
+@media (max-width: 460px) {
+  .account-fields { grid-template-columns: 1fr; }
+  .customer-id { align-items: flex-start; flex-direction: column; }
+  .reservation-card { padding: 15px; }
+}

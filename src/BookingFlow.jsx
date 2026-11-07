@@ -28,7 +28,7 @@ export function AccountPage({ register, onLogin }) {
         <label className="field">Data urodzenia<input name="data_urodzenia" type="date" max={today()} autoComplete="bday" required/></label>
         <label className="field">E-mail<input name="email" type="email" autoComplete="email" required maxLength={200}/></label>
         <label className="field">Telefon<input name="telefon" type="tel" autoComplete="tel" required maxLength={25}/></label>
-      </> : <label className="field">ID klienta lub e-mail<input name="login" autoComplete="username" required maxLength={200}/></label>}
+      </> : <label className="field">Adres e-mail lub ID klienta<input name="login" autoComplete="username" required maxLength={200}/></label>}
       <label className="field">Hasło<input name="haslo" type="password" autoComplete={register ? 'new-password' : 'current-password'} minLength={register ? 8 : undefined} maxLength={200} required/></label>
       {register && <label className="field">Powtórz hasło<input name="powtorz" type="password" autoComplete="new-password" required maxLength={200}/></label>}
       <button className="button button-dark" disabled={busy}>{busy ? 'Proszę czekać…' : register ? 'Utwórz konto i przejdź dalej' : 'Zaloguj się'}</button>

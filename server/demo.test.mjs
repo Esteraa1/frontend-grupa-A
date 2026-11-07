@@ -15,7 +15,7 @@ try {
   }
   await request('/availability?usluga_id=1', 'GET', null, 401);
   const user = await request('/auth/register', 'POST', { imie: 'Test', nazwisko: 'Testowy', data_urodzenia: '2015-01-01', email: 'flow@example.com', telefon: '123456789', haslo: 'Test-flow-123' });
-  assert.ok(user.id); assert.equal(user.hash, undefined);
+  assert.ok(user.id); assert.equal(user.hash, undefined); assert.match(user.customerId, /^KL-[0-9A-F]{16}$/);
   await request('/auth/logout', 'POST');
   await request('/auth/login', 'POST', { login: 'flow@example.com', haslo: 'wrong' }, 401);
   await request('/auth/login', 'POST', { login: user.id, haslo: 'Test-flow-123' });
@@ -29,6 +29,15 @@ try {
   assert.equal(slots.at(-1).godz_od, '17:30'); assert.equal(slots.at(-1).godz_do, '19:00');
   const payload = { ...selection, godz_od: '16:30', request_id: 'first' };
   const reservation = await request('/reservations', 'POST', payload, 201);
+  assert.deepEqual(await request('/reservations'), [reservation]);
+  assert.equal(reservation.klient_id, user.id);
+  // Reloading the panel and restoring a session must return the same saved visit.
+  assert.equal((await request('/auth/me')).user.customerId, user.customerId);
+  assert.deepEqual(await request('/reservations'), [reservation]);
+  await request('/auth/logout', 'POST');
+  await request('/reservations', 'GET', null, 401);
+  assert.equal((await request('/auth/login', 'POST', { login: user.customerId, haslo: 'Test-flow-123' })).customerId, user.customerId);
+  assert.deepEqual(await request('/reservations'), [reservation]);
   assert.match(reservation.id, /^[A-Z0-9]{10}$/);
   assert.match(reservation.id, /[A-Z]/);
   assert.match(reservation.id, /[0-9]/);
@@ -58,5 +67,41 @@ try {
     assert.ok(!ids.has(next.id)); ids.add(next.id);
     await request(`/reservations/${next.id}`, 'DELETE');
   }
-  console.log('PASS: registration, login, availability, overlap, idempotency, cancellation, payment retry, ownership');
+  const profile = await request('/auth/me', 'PATCH', { imie: 'Jan', nazwisko: 'Nowak', email: 'new@example.com', telefon: '+48 123 456 789', customerId: 'forged' });
+  assert.equal(profile.customerId, user.customerId); assert.equal(profile.email, 'new@example.com');
+  await request('/auth/me', 'PATCH', { imie: 'Jan', nazwisko: 'Nowak', email: 'invalid', telefon: '123456789' }, 400);
+  await request('/auth/password', 'POST', { currentPassword: 'wrong', newPassword: 'new-password' }, 400);
+  await request('/auth/password', 'POST', { currentPassword: 'Test-flow-123', newPassword: 'new-password' });
+  await request('/auth/logout', 'POST');
+  await request('/auth/login', 'POST', { login: user.customerId, haslo: 'Test-flow-123' }, 401);
+  assert.equal((await request('/auth/login', 'POST', { login: user.customerId.toLowerCase(), haslo: 'new-password' })).id, user.id);
+  assert.equal((await request('/reservations')).length, 32);
+  const editable = await request('/reservations', 'POST', { ...selection, godz_od: '09:00', request_id: 'edit-me' }, 201);
+  const ownSlots = await request(`/availability?${query}&reservation_id=${editable.id}`);
+  assert.ok(ownSlots.some(slot => slot.godz_od === '09:00'));
+  await request(`/reservations/${editable.id}`, 'PATCH', { ...selection, usluga_id: '1', godz_od: '18:00' }, 409);
+  const changed = await request(`/reservations/${editable.id}`, 'PATCH', { ...selection, usluga_id: '1', godz_od: '10:00' });
+  assert.equal(changed.id, editable.id); assert.equal(changed.godz_do, '11:00'); assert.equal(changed.kwota, 180);
+  assert.deepEqual((await request('/reservations')).find(r => r.id === changed.id), changed);
+  await request(`/reservations/${editable.id}`, 'DELETE');
+  assert.equal((await request('/reservations')).find(r => r.id === editable.id).status, 'ANULOWANA');
+  await request(`/reservations/${editable.id}`, 'DELETE', null, 400);
+  await request(`/reservations/${editable.id}`, 'PATCH', { ...selection, godz_od: '09:00' }, 400);
+  await request(`/reservations/${second.id}`, 'DELETE', null, 400);
+  await request(`/reservations/${second.id}`, 'PATCH', { ...selection, usluga_id: '1', godz_od: '09:00' }, 400);
+  await request('/auth/logout', 'POST');
+  const other = await request('/auth/register', 'POST', { imie: 'Inny', nazwisko: 'Klient', data_urodzenia: '1990-01-01', email: 'other@example.com', telefon: '123456789', haslo: 'other-password' });
+  assert.notEqual(other.customerId, user.customerId);
+  assert.deepEqual(await request('/reservations'), []);
+  await request(`/reservations/${second.id}`, 'GET', null, 404);
+  await request(`/reservations/${second.id}`, 'PATCH', { ...selection, godz_od: '09:00' }, 404);
+  await request(`/reservations/${second.id}`, 'DELETE', null, 404);
+  await request(`/availability?${query}&reservation_id=${second.id}`, 'GET', null, 404);
+  await request('/auth/me', 'PATCH', { imie: 'Inny', nazwisko: 'Klient', email: 'new@example.com', telefon: '123456789' }, 400);
+  await request('/auth/logout', 'POST');
+  assert.equal((await request('/auth/login', 'POST', { login: 'new@example.com', haslo: 'new-password' })).customerId, user.customerId);
+  await request('/auth/logout', 'POST');
+  for (let i = 0; i < 10; i++) await request('/auth/login', 'POST', { login: 'unknown@example.com', haslo: 'wrong' }, 401);
+  await request('/auth/login', 'POST', { login: user.customerId, haslo: 'new-password' }, 429);
+  console.log('PASS: authentication, profile, password, customer IDs, reservations, conflicts, ownership, rate limiting and payments');
 } finally { child.kill(); }

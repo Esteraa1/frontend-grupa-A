@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { api } from './api';
 import { AccountPage, BookingFlow } from './BookingFlow';
+import UserPanel from './UserPanel';
 
 import HERO_IMAGE from './assets/2025-163-1.10b8aadf.jpg';
 
@@ -38,6 +39,7 @@ function Header({ onBook, user, onLogout }) {
         <a className="logo" href="#start" onClick={close} aria-label="Studio Soma – strona główna">soma<span className="logo-dot">.</span></a>
         <nav className={`nav ${open ? 'nav-open' : ''}`} aria-label="Nawigacja główna">
           {!user && <a href="#/logowanie" onClick={close}>Logowanie</a>}
+          {user && <a href="#/moje-konto" onClick={close}>Moje konto</a>}
           {user && <button className="subtle-link" onClick={() => { close(); onLogout(); }}>Wyloguj</button>}
           <a href="#oferta" onClick={close}>Masaże</a>
           <a href="#kontakt" onClick={close}>Kontakt</a>
@@ -121,7 +123,7 @@ function App() {
     return () => window.removeEventListener('hashchange', navigate);
   }, []);
   useEffect(() => {
-    const titles = { '#/logowanie': 'Logowanie', '#/konto': 'Rejestracja konta', '#/rezerwacja': 'Rezerwacja' };
+    const titles = { '#/logowanie': 'Logowanie', '#/konto': 'Rejestracja konta', '#/rezerwacja': 'Rezerwacja', '#/moje-konto': 'Moje konto' };
     document.title = `${titles[page] || 'Studio masażu'} — Soma`;
   }, [page]);
   const loadServices = useCallback((signal) => {
@@ -144,7 +146,7 @@ function App() {
   function loggedIn(account) {
     setUser(account); setNotice('');
     loadServices();
-    window.location.hash = initialServiceId ? '/rezerwacja' : 'oferta';
+    window.location.hash = page === '#/moje-konto' ? '/moje-konto' : (page === '#/rezerwacja' || initialServiceId) ? '/rezerwacja' : '/moje-konto';
   }
   async function logout() {
     try { await api('/auth/logout', { method: 'POST' }); setUser(null); setInitialServiceId(''); window.location.hash = 'start'; }
@@ -155,8 +157,9 @@ function App() {
     <Header onBook={openBook} user={user} onLogout={logout}/>
     {notice && <p className="modal-warning" role="alert">{notice}</p>}
     <main>
-      {checking && (accountPage || page === '#/rezerwacja') ? <p className="form-page" role="status">Sprawdzanie logowania…</p>
-        : (accountPage && !user) || (page === '#/rezerwacja' && !user) ? <AccountPage key={page} register={page === '#/konto'} onLogin={loggedIn}/>
+      {checking && (accountPage || page === '#/rezerwacja' || page === '#/moje-konto') ? <p className="form-page" role="status">Sprawdzanie logowania…</p>
+        : (accountPage && !user) || ((page === '#/rezerwacja' || page === '#/moje-konto') && !user) ? <AccountPage key={page} register={page === '#/konto'} onLogin={loggedIn}/>
+        : page === '#/moje-konto' ? <UserPanel key={user.id} user={user} onUserChange={setUser} services={services} />
         : page === '#/rezerwacja' ? <BookingFlow key={initialServiceId} services={services} user={user} initialServiceId={initialServiceId}/>
         : <><Hero onBook={openBook}/><Services services={services} sourceLive={online} onBook={openBook}/><Contact/></>}
     </main>

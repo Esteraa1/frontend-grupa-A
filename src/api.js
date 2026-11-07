@@ -12,7 +12,7 @@ export async function api(path, options = {}) {
     throw new Error('Brak połączenia z serwerem. Spróbuj ponownie.', { cause: error });
   }
   const data = await response.json().catch(() => null);
-  if (!response.ok || data === null) throw new Error(data?.message || 'Usługa jest chwilowo niedostępna. Spróbuj ponownie.');
+  if (!response.ok || data === null) throw Object.assign(new Error(data?.message || 'Usługa jest chwilowo niedostępna. Spróbuj ponownie.'), { status: response.status });
   return data;
 }
 
