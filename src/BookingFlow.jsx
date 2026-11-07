@@ -116,7 +116,7 @@ export function BookingFlow({ services, user, initialServiceId }) {
   return <section className="form-page flow-page">
     <a className="back-link" href="#oferta">← Oferta masaży</a>
     <h1>{step === 4 ? 'Wizyta zarezerwowana' : 'Rezerwacja masażu'}</h1>
-    <ol className="flow-steps" aria-label="Etapy rezerwacji">{labels.map((label, i) => <li key={label} aria-current={step === i ? 'step' : undefined} className={step >= i ? 'current' : ''}>{i + 1}. {label}</li>)}</ol>
+    <ol className="flow-steps" aria-label="Etapy rezerwacji">{labels.map((label, i) => <li key={label} aria-current={step === i ? 'step' : undefined} className={step >= i ? 'current' : ''}>{label}</li>)}</ol>
     <Notice>{error}</Notice>
     {error && step === 1 && <button className="back-link retry-button" onClick={() => { setRetry(r => r + 1); setLoading(true); }}>Spróbuj ponownie</button>}
     {step === 0 && <form className="login-form" onSubmit={e => { e.preventDefault(); go(1); }}>
